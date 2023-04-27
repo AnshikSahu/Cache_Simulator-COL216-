@@ -1,16 +1,12 @@
-#ifndef _CACHE_HPP_
-#define _CACHE_HPP_
+#ifndef _SIMULATOR_HPP_
+#define _SIMULATOR_HPP_
 
 #include <iostream>
 #include <vector>
 #include <map>
 #include <string>
 #include <algorithm>
-#include <fstream>
-#include <sstream>
 #include <cmath>
-#include <ctime>
-#include <cstdlib>
 
 using namespace std;
 
@@ -22,14 +18,12 @@ struct Cache{
         int tag;
         int lru;
         int address;
-        int data;
         CacheBlock(){
             valid = false;
             dirty = false;
             tag = 0;
             lru = 0;
             address = 0;
-            data = 0;
         }
     };
 
@@ -62,7 +56,7 @@ struct Cache{
     int num_read_misses;
     int num_write_misses;
     vector<CacheSet> sets;
-    struct Cache *next_level;
+    void *next_level;
     struct Cache *prev_level;
     
     Cache(int size, int associativity, int block_size){
@@ -86,7 +80,7 @@ struct Cache{
         this->num_write_misses = 0;
     }
 
-    int read(int address){
+    void read(int address){
         num_accesses++;
         num_reads++;
         int index = (address >> num_bits_offset) & ((1 << num_bits_index) - 1);
@@ -98,7 +92,7 @@ struct Cache{
                 num_hits++;
                 num_read_hits++;
                 sets[index].blocks[i].lru = 0;
-                return sets[index].blocks[i].data;
+                return ;
             }
         }
         if(!hit){
@@ -115,7 +109,7 @@ struct Cache{
             if(sets[index].blocks[lru_index].dirty){
                 num_write_backs++;
                 if(next_level != NULL){
-                    next_level->write(sets[index].blocks[lru_index].address,sets[index].blocks[lru_index].data);
+                    ((struct Cache*)next_level)->write(sets[index].blocks[lru_index].address);
                 }
             }
             sets[index].blocks[lru_index].valid = true;
@@ -124,19 +118,19 @@ struct Cache{
             sets[index].blocks[lru_index].lru = 0;
             sets[index].blocks[lru_index].address = address;
             if(next_level != NULL){
-                sets[index].blocks[lru_index].data = next_level->read(address);
+                ((struct Cache*)next_level)->read(address);
             }
-            return sets[index].blocks[lru_index].data;
+            return ;
         }
         for(int i = 0; i < associativity; i++){
             if(sets[index].blocks[i].valid){
                 sets[index].blocks[i].lru++;
             }
         }
-        return 0;
+        return ;
     }
 
-    void write(int address, int data){
+    void write(int address){
         num_accesses++;
         num_writes++;
         int index = (address >> num_bits_offset) & ((1 << num_bits_index) - 1);
@@ -149,7 +143,6 @@ struct Cache{
                 num_write_hits++;
                 sets[index].blocks[i].lru = 0;
                 sets[index].blocks[i].dirty = true;
-                sets[index].blocks[i].data = data;
                 break;
             }
         }
@@ -167,7 +160,7 @@ struct Cache{
             if(sets[index].blocks[lru_index].dirty){
                 num_write_backs++;
                 if(next_level != NULL){
-                    next_level->write(sets[index].blocks[lru_index].address,sets[index].blocks[lru_index].data);
+                    ((struct Cache*)next_level)->write(sets[index].blocks[lru_index].address);
                 }
             }
             sets[index].blocks[lru_index].valid = true;
@@ -175,9 +168,8 @@ struct Cache{
             sets[index].blocks[lru_index].tag = tag;
             sets[index].blocks[lru_index].lru = 0;
             sets[index].blocks[lru_index].address = address;
-            sets[index].blocks[lru_index].data = data;
             if(next_level != NULL){
-                sets[index].blocks[lru_index].data = next_level->read(address);
+                ((struct Cache*)next_level)->read(address);
             }
         }
         for(int i = 0; i < associativity; i++){
@@ -187,5 +179,74 @@ struct Cache{
         }
     }
 
+    void print_stats(){
+        cout << "Number of accesses = " << num_accesses << endl;
+        cout << "Number of hits = " << num_hits << endl;
+        cout << "Number of misses = " << num_misses << endl;
+        cout << "Number of write backs = " << num_write_backs << endl;
+        cout << "Number of reads = " << num_reads << endl;
+        cout << "Number of writes = " << num_writes << endl;
+        cout << "Number of read hits = " << num_read_hits << endl;
+        cout << "Number of write hits = " << num_write_hits << endl;
+        cout << "Number of read misses = " << num_read_misses << endl;
+        cout << "Number of write misses = " << num_write_misses << endl;
+    }
+
 };
+
+struct Dram{
+    int size;
+    struct Cache *prev_level;
+
+    Dram(int size){
+        this->size = size;
+        this->prev_level = NULL;
+    }
+
+    void read(int address){
+        return ;
+    }
+
+    void write(int address){
+        return ;
+    }
+};
+
+struct Heirarchy{
+    int num_levels;
+    vector<struct Cache*> levels;
+    struct Dram *DRAM;
+
+    Heirarchy(int L1_size, int L1_associativity, int L1_block_size, int L2_size, int L2_associativity, int L2_block_size, int DRAM_size, int num_levels){
+        DRAM = new Dram(DRAM_size);
+        this->num_levels = num_levels;
+        for(int i = 0; i < num_levels; i++){
+            if(i == 0){
+                levels.push_back(new Cache(L1_size, L1_associativity, L1_block_size));
+                levels[i]->next_level = DRAM;
+            }
+            else if(i == 1){
+                levels.push_back(new Cache(L2_size, L2_associativity, L2_block_size));
+                levels[i]->next_level = levels[i - 1];
+                levels[i-1]->prev_level = levels[i];
+            }
+        }        
+    }
+
+    void read(int address){
+        levels[num_levels - 1]->read(address);
+    }
+
+    void write(int address){
+        levels[num_levels - 1]->write(address);
+    }
+
+    void print_stats(){
+        for(int i=0; i < num_levels; i++){
+            cout << "L" << i + 1 << " Cache:\n";
+            levels[i]->print_stats();
+        }
+    }
+};
+
 #endif
