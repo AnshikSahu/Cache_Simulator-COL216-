@@ -119,8 +119,8 @@ struct Cache{
                 }
             }
             if(next_level != NULL){
-                    ((struct Cache*)next_level)->read(address);
-                }
+                ((struct Cache*)next_level)->read(address);
+            }
             sets[index].blocks[lru_index].valid = true;
             sets[index].blocks[lru_index].dirty = false;
             sets[index].blocks[lru_index].tag = tag;
@@ -166,6 +166,9 @@ struct Cache{
                 if(next_level != NULL){
                     ((struct Cache*)next_level)->write(sets[index].blocks[lru_index].address);
                 }
+            }
+            if(next_level != NULL){
+                ((struct Cache*)next_level)->read(address);
             }
             sets[index].blocks[lru_index].valid = true;
             sets[index].blocks[lru_index].dirty = true;
