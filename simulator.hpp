@@ -55,22 +55,6 @@ struct Cache{
     int num_write_hits;
     int num_read_misses;
     int num_write_misses;
-    int num_dirty_evictions;
-    int num_clean_evictions;
-    int num_dirty_write_backs;
-    int num_clean_write_backs;
-    int num_dirty_read_misses;
-    int num_clean_read_misses;
-    int num_dirty_write_misses;
-    int num_clean_write_misses;
-    int num_dirty_read_hits;
-    int num_clean_read_hits;
-    int num_dirty_write_hits;
-    int num_clean_write_hits;
-    int num_dirty_hits;
-    int num_clean_hits;
-    int num_dirty_misses;
-    int num_clean_misses;
 
     vector<CacheSet> sets;
     void *next_level;
@@ -95,22 +79,7 @@ struct Cache{
         this->num_write_hits = 0;
         this->num_read_misses = 0;
         this->num_write_misses = 0;
-        this->num_dirty_evictions = 0;
-        this->num_clean_evictions = 0;
-        this->num_dirty_write_backs = 0;
-        this->num_clean_write_backs = 0;
-        this->num_dirty_read_misses = 0;
-        this->num_clean_read_misses = 0;
-        this->num_dirty_write_misses = 0;
-        this->num_clean_write_misses = 0;
-        this->num_dirty_read_hits = 0;
-        this->num_clean_read_hits = 0;
-        this->num_dirty_write_hits = 0;
-        this->num_clean_write_hits = 0;
-        this->num_dirty_hits = 0;
-        this->num_clean_hits = 0;
-        this->num_dirty_misses = 0;
-        this->num_clean_misses = 0;
+        
         for(int i = 0; i < num_sets; i++){
             CacheSet set(associativity);
             sets.push_back(set);
@@ -149,6 +118,9 @@ struct Cache{
                     ((struct Cache*)next_level)->write(sets[index].blocks[lru_index].address);
                 }
             }
+            if(next_level != NULL){
+                    ((struct Cache*)next_level)->read(address);
+                }
             sets[index].blocks[lru_index].valid = true;
             sets[index].blocks[lru_index].dirty = false;
             sets[index].blocks[lru_index].tag = tag;
