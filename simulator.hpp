@@ -10,6 +10,7 @@
 
 using namespace std;
 
+
 struct Cache{
 
     struct CacheBlock{
@@ -57,7 +58,7 @@ struct Cache{
     int num_write_misses;
 
     vector<CacheSet> sets;
-    void *next_level;
+    struct Cache *next_level;
     struct Cache *prev_level;
     
     Cache(int size, int associativity, int block_size){
@@ -79,6 +80,8 @@ struct Cache{
         this->num_write_hits = 0;
         this->num_read_misses = 0;
         this->num_write_misses = 0;
+        this->next_level = NULL;
+        this->prev_level = NULL;
         
         for(int i = 0; i < num_sets; i++){
             CacheSet set(associativity);
@@ -115,12 +118,13 @@ struct Cache{
             if(sets[index].blocks[lru_index].dirty){
                 num_write_backs++;
                 if(next_level != NULL){
-                    ((struct Cache*)next_level)->write(sets[index].blocks[lru_index].address);
+                    next_level->write(sets[index].blocks[lru_index].address);
                 }
             }
             if(next_level != NULL){
-                ((struct Cache*)next_level)->read(address);
+                next_level->read(address);
             }
+
             sets[index].blocks[lru_index].valid = true;
             sets[index].blocks[lru_index].dirty = false;
             sets[index].blocks[lru_index].tag = tag;
@@ -170,6 +174,7 @@ struct Cache{
             if(next_level != NULL){
                 ((struct Cache*)next_level)->read(address);
             }
+
             sets[index].blocks[lru_index].valid = true;
             sets[index].blocks[lru_index].dirty = true;
             sets[index].blocks[lru_index].tag = tag;
@@ -198,56 +203,34 @@ struct Cache{
 
 };
 
-struct Dram{
-    int size;
-    struct Cache *prev_level;
-
-    Dram(int size){
-        this->size = size;
-        this->prev_level = NULL;
-    }
-
-    void read(int address){
-        return ;
-    }
-
-    void write(int address){
-        return ;
-    }
-};
 
 struct Heirarchy{
     int num_levels;
     vector<struct Cache*> levels;
-    struct Dram *DRAM;
 
-    Heirarchy(int L1_size, int L1_associativity, int L1_block_size, int L2_size, int L2_associativity, int L2_block_size, int DRAM_size, int num_levels){
-        DRAM = new Dram(DRAM_size);
+    Heirarchy(int block_size, int num_levels, vector<int> sizes, vector<int> associativity){
         this->num_levels = num_levels;
         for(int i = 0; i < num_levels; i++){
-            if(i == 0){
-                levels.push_back(new Cache(L1_size, L1_associativity, L1_block_size));
-                levels[i]->next_level = DRAM;
+            Cache *cache = new Cache(sizes[i], associativity[i], block_size);
+            if(i>0){
+                cache->prev_level = levels[i - 1];
+                levels[i - 1]->next_level = cache;
             }
-            else if(i == 1){
-                levels.push_back(new Cache(L2_size, L2_associativity, L2_block_size));
-                levels[i]->next_level = levels[i - 1];
-                levels[i-1]->prev_level = levels[i];
-            }
+            levels.push_back(cache);
         }        
     }
 
     void read(int address){
-        levels[num_levels - 1]->read(address);
+        levels[0]->read(address);
     }
 
     void write(int address){
-        levels[num_levels - 1]->write(address);
+        levels[0]->write(address);
     }
 
     void print_stats(){
         for(int i=0; i < num_levels; i++){
-            cout << "L" << i + 1 << " Cache:\n";
+            cout << "L" << i+1 << " Cache:\n";
             levels[i]->print_stats();
         }
     }
