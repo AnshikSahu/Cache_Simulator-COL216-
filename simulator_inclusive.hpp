@@ -133,6 +133,9 @@ struct Cache{
                     next_level->write(sets[index].blocks[lru_index].address);
                 }
             }
+            if(prev_level != NULL){
+                prev_level->evict(address);
+            }
             if(next_level != NULL){
                 next_level->read(address);
             }
@@ -181,6 +184,9 @@ struct Cache{
                     ((struct Cache*)next_level)->write(sets[index].blocks[lru_index].address);
                 }
             }
+            if(prev_level != NULL){
+                prev_level->evict(address);
+            }
             if(next_level != NULL){
                 ((struct Cache*)next_level)->read(address);
             }
@@ -195,6 +201,20 @@ struct Cache{
         }
     }
 
+    void evict(long long int address){
+        int index = (address >> num_bits_offset) & ((1 << num_bits_index) - 1);
+        long long int tag = (address >> (num_bits_offset + num_bits_index));
+        for(int i = 0; i < associativity; i++){
+            if(sets[index].blocks[i].valid && sets[index].blocks[i].tag == tag){
+                sets[index].blocks[i].valid = false;
+                sets[index].blocks[i].dirty = false;
+                sets[index].blocks[i].tag = 0;
+                sets[index].blocks[i].lru = 0;
+                sets[index].blocks[i].address = 0;
+                break;
+            }
+        }
+    }
 
     void compute_stats(){
         this->miss_rate = (float)num_misses/(float)num_accesses;

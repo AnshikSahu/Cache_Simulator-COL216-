@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Define the parameter variations
-param1_vals=("8")
-param2_vals=("512")
-param3_vals=("1")
-param4_vals=("16384")
-param5_vals=("1")
+param1_vals=("64")
+param2_vals=("1024")
+param3_vals=("2")
+param4_vals=("65536")
+param5_vals=("8")
 param6_vals=("trace1.txt" "trace2.txt" "trace3.txt" "trace4.txt" "trace5.txt" "trace6.txt" "trace7.txt" "trace8.txt")
 
 # Loop over all parameter variations
