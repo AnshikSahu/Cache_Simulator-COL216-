@@ -8,3 +8,5 @@ run: cache_simulate
 	./cache_simulate $(ARGS)
 cache_simulate: simulator.hpp Cache.cpp
 	g++ Cache.cpp -o cache_simulate
+run_all: cache_simulate varriations.sh
+	./varriations.sh
