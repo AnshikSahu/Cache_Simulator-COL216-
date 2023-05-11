@@ -27,7 +27,7 @@ struct Cache{
             valid = false;
             dirty = false;
             tag = 0;
-            lru = 0;
+            lru = 1;
             address = 0;
         }
     };

@@ -12,8 +12,8 @@ int main(int argc,char *argv[]){
     int L1_assoc = stoi(argv[3]);
     int L2_size = stoi(argv[4]);
     int L2_assoc = stoi(argv[5]);
-    Heirarchy* heirarchy=(Heirarchy*)(new Heirarchy(block_size, 2, {L1_size,L2_size}, {L1_assoc,L2_assoc}));
     std::ifstream file(argv[6]);
+    Heirarchy* heirarchy=(Heirarchy*)(new Heirarchy(block_size, 2, {L1_size,L2_size}, {L1_assoc,L2_assoc}));
 	if (file.is_open())
     {
         std::string line;
